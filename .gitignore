@@ -21,7 +21,7 @@
 
 # OCR Engine Ignore
 .bak
-ocr-engine/test
+test
 
 # OCR Engine Ignore .bak
 # **/ocr-engine/test/samples
