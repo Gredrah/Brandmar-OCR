@@ -20,9 +20,13 @@
 **/.vscode/
 
 # OCR Engine Ignore
-**/ocr-engine/test/samples
-ocr-engine/*.png
-ocr-engine/data/processed/test_*.png
-ocr-engine/**/__pycache__/
-ocr-engine/**/*old.*
-ocr-engine/.*
+.bak
+ocr-engine/test
+
+# OCR Engine Ignore .bak
+# **/ocr-engine/test/samples
+# ocr-engine/*.png
+# ocr-engine/data/processed/test_*.png
+# ocr-engine/**/__pycache__/
+# ocr-engine/**/*old.*
+# ocr-engine/.*
