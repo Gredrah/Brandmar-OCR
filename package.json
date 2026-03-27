@@ -1,0 +1,27 @@
+{
+  "name": "ocr-engine",
+  "version": "1.0.0",
+  "description": "Gemini-powered OCR engine for distribution receipts",
+  "type": "module",
+  "main": "api/parse.js",
+  "scripts": {
+    "test": "node api/parse.js",
+    "dev": "nodemon api/parse.js",
+    "start": "node api/parse.js"
+  },
+  "keywords": [
+    "ocr",
+    "gemini",
+    "vercel",
+    "receipt-parsing"
+  ],
+  "author": "Brandon Mills",
+  "license": "ISC",
+  "dependencies": {
+    "@google/genai": "^1.46.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
