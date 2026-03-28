@@ -18,6 +18,7 @@
 
 # Oracle Cloud Functions
 .wrangler/
+.dev*
 
 # VS Code Specific
 **/.vscode/
