@@ -1,0 +1,21 @@
+{
+    "name": "brandmar-ocr",
+    "version": "1.0.0",
+    "main": "api/ocr.js",
+    "type": "module",
+    "scripts": {
+        "start": "node api/ocr.js",
+        "test": "node api/ocr.js",
+        "dev": "nodemon api/ocr.js"
+    },
+    "dependencies": {
+        "@google/genai": "^1.46.0",
+        "Buffer": "^0.0.0",
+        "cors": "^2.8.6",
+        "dotenv": "^17.3.1",
+        "express": "^5.2.1"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.0"
+    }
+}

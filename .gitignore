@@ -1,0 +1,35 @@
+# Dependencies
+**/node_modules/
+**/dist/
+**/.npm/
+
+# Environment Secrets (Crucial for client data)
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Tesseract Specific
+# Ignore the large traineddata files if you download them locally
+**/*.traineddata
+
+# OS Specific
+**/.DS_Store
+**/Thumbs.db
+
+# Oracle Cloud Functions
+.wrangler/
+
+# VS Code Specific
+**/.vscode/
+
+# OCR Engine Ignore
+.bak
+test
+
+# OCR Engine Ignore .bak
+# **/ocr-engine/test/samples
+# ocr-engine/*.png
+# ocr-engine/data/processed/test_*.png
+# ocr-engine/**/__pycache__/
+# ocr-engine/**/*old.*
+# ocr-engine/.*
