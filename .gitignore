@@ -18,12 +18,14 @@
 
 # Oracle Cloud Functions
 .wrangler/
+.dev*
 
 # VS Code Specific
 **/.vscode/
 
-#Anthropic
+# Anthropic
 **/*.anth
+
 
 # OCR Engine Ignore
 .bak
