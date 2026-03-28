@@ -166,7 +166,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const result = await response.json();
 
+            // NEW: Catching the 401 Unauthorized specifically
             if (!response.ok) {
+                if (response.status === 401) {
+                    throw new Error('Not authorized. Please click "Authorize Google Sheets" at the top of the page first.');
+                }
                 throw new Error(result.error || "Failed to push to Sheets");
             }
 

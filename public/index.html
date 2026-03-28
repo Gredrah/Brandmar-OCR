@@ -16,7 +16,16 @@
 <body>
 
     <h2>Upload Distributor Receipts</h2>
+    
+    <div id="auth-section" style="margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #ddd;">
+        <strong>Step 1:</strong> 
+        <a href="/api/auth/login" style="padding: 8px 15px; background-color: #4285F4; color: white; text-decoration: none; border-radius: 4px; display: inline-block; margin-left: 10px;">Authorize Google Sheets</a>
+        <span style="margin-left: 10px; font-size: 0.9em; color: #555;">(Required before exporting)</span>
+    </div>
+
     <p>Select up to 3 receipt images (Summary, Gross Profit, Payments).</p>
+
+    <form id="ocr-form">
 
     <form id="ocr-form">
         <div class="upload-box">
