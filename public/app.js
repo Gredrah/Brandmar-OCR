@@ -1,43 +1,92 @@
 /**
  * @file app.js
  * @description Client-side logic for the Distributor OCR Processor.
- *
- * ============================================================================
- * ATTN HTML DEVELOPER (PARTNER INSTRUCTIONS):
- * ============================================================================
- * For this script to function, your HTML MUST include the following element IDs:
- * * 1. 'ocr-form'       -> The <form> element wrapping the inputs.
- * 2. 'receipts'       -> The <input type="file" multiple> element.
- * (Tip: add the `accept="image/*"` attribute)
- * 3. 'submit-btn'     -> The <button type="submit"> element.
- * 4. 'status-message' -> A <div> or <span> to display loading/error text.
- * 5. 'json-output'    -> A <pre> or <code> block to display the formatted JSON.
- * ============================================================================
  */
 
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Hook into the form
-    const ocrForm = document.getElementById('ocr-form');
+// Native Image Compression for Token Reduction
+async function compressImage(file, maxDimension = 1200, quality = 0.85) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
 
-    // Safety check to ensure the HTML partner set up the IDs correctly
-    if (!ocrForm) {
-        console.error("Initialization Error: Could not find form with ID 'ocr-form'. Check HTML IDs.");
-        return;
+                if (width > height && width > maxDimension) {
+                    height = Math.round((height * maxDimension) / width);
+                    width = maxDimension;
+                } else if (height > maxDimension) {
+                    width = Math.round((width * maxDimension) / height);
+                    height = maxDimension;
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, width, height);
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob((blob) => {
+                    resolve(new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    }));
+                }, 'image/jpeg', quality);
+            };
+            img.onerror = (error) => reject(error);
+        };
+        reader.onerror = (error) => reject(error);
+    });
+}
+
+// Helper to render compressed images to the DOM for debugging
+function renderDebugImages(compressedFiles) {
+    let debugContainer = document.getElementById('debug-images');
+    if (!debugContainer) {
+        debugContainer = document.createElement('div');
+        debugContainer.id = 'debug-images';
+        debugContainer.style.marginTop = '20px';
+        debugContainer.style.display = 'flex';
+        debugContainer.style.gap = '10px';
+        debugContainer.style.overflowX = 'auto';
+        document.getElementById('ocr-form').after(debugContainer);
     }
+    
+    debugContainer.innerHTML = '<h4>Debug: Compressed Images Sent to AI</h4>';
+    
+    compressedFiles.forEach(file => {
+        const imgUrl = URL.createObjectURL(file);
+        const imgElem = document.createElement('img');
+        imgElem.src = imgUrl;
+        imgElem.style.maxHeight = '200px';
+        imgElem.style.border = '1px solid #ccc';
+        imgElem.title = `Size: ${(file.size / 1024).toFixed(1)} KB`;
+        debugContainer.appendChild(imgElem);
+    });
+}
 
-    // 2. Listen for the form submission
+document.addEventListener('DOMContentLoaded', () => {
+    const ocrForm = document.getElementById('ocr-form');
+    const exportBtn = document.getElementById('export-btn');
+    const jsonOutput = document.getElementById('json-output');
+    const statusMsg = document.getElementById('status-message');
+
+    if (!ocrForm) return;
+
+    // --- LISTENER 1: Handle OCR Image Submission ---
     ocrForm.addEventListener('submit', async (event) => {
-        event.preventDefault(); // Prevent standard page reload
+        event.preventDefault(); 
 
-        // Grab the rest of the required DOM elements
         const fileInput = document.getElementById('receipts');
         const submitBtn = document.getElementById('submit-btn');
-        const statusMsg = document.getElementById('status-message');
-        const jsonOutput = document.getElementById('json-output');
+        const files = Array.from(fileInput.files);
 
-        const files = fileInput.files;
-
-        // --- 3. Client-Side Validation (Fail Fast) ---
         if (files.length === 0) {
             statusMsg.innerHTML = '<span style="color: red; font-weight: bold;">Please select at least one receipt image.</span>';
             return;
@@ -45,54 +94,88 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (files.length > 3) {
             statusMsg.innerHTML = '<span style="color: red; font-weight: bold;">Too many files! Please select a maximum of 3.</span>';
-            fileInput.value = ''; // Clear the invalid selection
+            fileInput.value = ''; 
             return;
         }
 
-        // --- 4. UI State Update (Loading Mode) ---
         submitBtn.disabled = true;
-        statusMsg.innerText = "Uploading and processing with Vision AI... This may take a few seconds.";
-        jsonOutput.innerText = "Processing...";
-
-        // --- 5. Prepare Data for the Cloudflare API ---
-        const formData = new FormData();
-        for (const element of files) {
-            formData.append('receipts', element);
-        }
-
-        // --- 6. Call the Backend ---
+        exportBtn.style.display = 'none'; // Hide export button during new upload
+        jsonOutput.value = "Compressing images..."; // Changed to .value for textarea
+        
         try {
-            // This calls the endpoint mapped to webapp/functions/process.js
+            const formData = new FormData();
+            const compressedFiles = [];
+
+            for (const element of files) {
+                const compressedFile = await compressImage(element);
+                compressedFiles.push(compressedFile);
+                formData.append('receipts', compressedFile); 
+            }
+
+            renderDebugImages(compressedFiles);
+            statusMsg.innerText = "Sending batch to Gemini Flash...";
+
             const response = await fetch('/api/process', {
                 method: 'POST',
                 body: formData
             });
 
             const data = await response.json();
-
-            // Catch HTTP errors from our Worker (like the 400 Bad Request)
+            
             if (!response.ok) {
                 throw new Error(data.error || `Server returned status ${response.status}`);
             }
 
-            // --- 7. Handle Success & DOM Updates ---
-            statusMsg.innerText = "Processing Complete!";
-
-            // // Display visual warning if the backend flagged inconsistent dates
-            // if (data.metadata && data.metadata.dates_consistent === false) {
-            //     statusMsg.innerHTML += '<br><span style="color: red; font-weight: bold;">WARNING: Dates did not match across receipts. Financial data was nullified to prevent errors.</span>';
-            // }
-
-            // Pretty-print the JSON output into the HTML
-            jsonOutput.innerText = JSON.stringify(data, null, 2);
+            // Write results to the textarea and show the export button
+            jsonOutput.value = JSON.stringify(data, null, 2);
+            statusMsg.innerHTML = '<span style="color: green; font-weight: bold;">Processing Complete! Review the data below.</span>';
+            exportBtn.style.display = 'block';
 
         } catch (error) {
-            // --- 8. Handle Network or Server Errors ---
             statusMsg.innerHTML = `<span style="color: red; font-weight: bold;">Error: ${error.message}</span>`;
-            jsonOutput.innerText = "{}";
+            jsonOutput.value = "";
         } finally {
-            // Always re-enable the submit button so the user can try again
             submitBtn.disabled = false;
+        }
+    });
+
+    // --- LISTENER 2: Handle Exporting to Google Sheets ---
+    exportBtn.addEventListener('click', async () => {
+        const rawEditedData = jsonOutput.value;
+
+        let finalPayload;
+
+        try {
+            finalPayload = JSON.parse(rawEditedData);
+        } catch (error) {
+            statusMsg.innerHTML = '<span style="color: red; font-weight: bold;">Error: Invalid JSON format. Please check your edits.</span>';
+            return;
+        }
+
+        exportBtn.disabled = true;
+        statusMsg.innerText = "Sending to Google Sheets...";
+
+        try {
+            const response = await fetch('/api/sheets', { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(finalPayload)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || "Failed to push to Sheets");
+            }
+
+            statusMsg.innerHTML = '<span style="color: green; font-weight: bold;">Successfully added to Google Sheets!</span>';
+            
+        } catch (error) {
+            statusMsg.innerHTML = `<span style="color: red; font-weight: bold;">Export Error: ${error.message}</span>`;
+        } finally {
+            exportBtn.disabled = false;
         }
     });
 });
