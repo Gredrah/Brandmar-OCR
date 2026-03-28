@@ -22,6 +22,9 @@
 # VS Code Specific
 **/.vscode/
 
+#Anthropic
+**/*.anth
+
 # OCR Engine Ignore
 .bak
 test
