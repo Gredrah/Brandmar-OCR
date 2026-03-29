@@ -44,9 +44,15 @@ export async function onRequestGet(context) {
         }
 
         const data = await response.json();
+        const allFiles = data.files || [];
 
-        // 3. Return the array of files directly to the frontend
-        return new Response(JSON.stringify(data.files || []), { 
+        // 3. Apply Regex Filter in JavaScript
+        // This matches "Brandmar Holdings " followed by exactly 4 digits (the year)
+        const yearRegex = /.*Brandmar Holdings \d{4}.*/;
+        const filteredFiles = allFiles.filter(file => yearRegex.test(file.name));
+
+        // 4. Return the filtered array to the frontend
+        return new Response(JSON.stringify(filteredFiles), { 
             status: 200,
             headers: { 'Content-Type': 'application/json' }
         });
