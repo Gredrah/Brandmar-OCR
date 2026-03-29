@@ -27,12 +27,12 @@ export async function onRequestPost(context) {
         if (!dateStr) throw new Error("No date found in OCR results.");
 
         const [mStr, dStr, yStr] = dateStr.split('/');
-        const monthIndex = parseInt(mStr) - 1;
-        const day = parseInt(dStr);
+        const monthIndex = Number.parseInt(mStr) - 1;
+        const day = Number.parseInt(dStr);
         const year = yStr;
 
         const monthNames = [
-            "January", "Febuary", "March", "April", "May", "June", 
+            "January", "February", "March", "April", "May", "June", 
             "July", "August", "September", "October", "November", "December"
         ];
 

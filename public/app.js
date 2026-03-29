@@ -74,40 +74,46 @@ async function compressImage(file, maxDimension = 1200, quality = 0.85) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = (event) => {
+        reader.onload = handleReaderLoad;
+        reader.onerror = (error) => reject(new Error(error?.message || error?.type || 'FileReader error'));
+
+        function handleReaderLoad(event) {
             const img = new Image();
             img.src = event.target.result;
-            img.onload = () => {
-                let width = img.width;
-                let height = img.height;
+            img.onload = () => handleImageLoad(img);
+            img.onerror = (error) => reject(new Error(error?.message || error?.type || 'FileReader error'));
+        }
 
-                if (width > height && width > maxDimension) {
-                    height = Math.round((height * maxDimension) / width);
-                    width = maxDimension;
-                } else if (height > maxDimension) {
-                    width = Math.round((width * maxDimension) / height);
-                    height = maxDimension;
-                }
+        function handleImageLoad(img) {
+            let width = img.width;
+            let height = img.height;
 
-                const canvas = document.createElement('canvas');
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(0, 0, width, height);
-                ctx.drawImage(img, 0, 0, width, height);
+            if (width > height && width > maxDimension) {
+                height = Math.round((height * maxDimension) / width);
+                width = maxDimension;
+            } else if (height > maxDimension) {
+                width = Math.round((width * maxDimension) / height);
+                height = maxDimension;
+            }
 
-                canvas.toBlob((blob) => {
-                    resolve(new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
-                        type: 'image/jpeg',
-                        lastModified: Date.now()
-                    }));
-                }, 'image/jpeg', quality);
-            };
-            img.onerror = (error) => reject(error);
-        };
-        reader.onerror = (error) => reject(error);
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob(handleCanvasBlob, 'image/jpeg', quality);
+        }
+
+        function handleCanvasBlob(blob) {
+            resolve(new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+            }));
+        }
     });
 }
 
@@ -147,8 +153,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const exportBtn = document.getElementById('export-btn');
     const statusMsg = document.getElementById('status-message'); // Corrected to match index.html
     const jsonOutput = document.getElementById('json-output');
-    
-    let currentExtractedData = null; // Store data temporarily after Gemini process
 
     // 1. Check Auth and Load Workbooks on Page Load
     try {
@@ -241,11 +245,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const extractedData = await BrandmarAPI.processReceipts(compressedFiles);
 
             // Update UI with the results
-            currentExtractedData = extractedData;
             jsonOutput.value = JSON.stringify(extractedData, null, 2);
             
             // Flag to the user if the dates on the receipts don't match
-            if (extractedData.metadata && extractedData.metadata.dates_consistent === false) {
+            if (extractedData.metadata?.dates_consistent === false) {
                  statusMsg.innerHTML = '<span style="color: orange; font-weight: bold;">Warning: Dates across receipts do not match. Please verify the data carefully before exporting.</span>';
             } else {
                  statusMsg.innerHTML = '<span style="color: green; font-weight: bold;">Extraction complete! Review and edit the data below before exporting.</span>';
