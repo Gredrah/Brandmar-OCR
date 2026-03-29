@@ -9,6 +9,7 @@ const SYSTEM_PROMPT = `
     {
       "distributor_summary": {
         "date": "MM/DD/YYYY",
+        "gross_sales": 0.0,
         "gst_hst_charged": 0.0,
         "total_absorptions_odf": 0.0, 
         "total_absorptions_dist": 0.0,
@@ -30,16 +31,20 @@ const SYSTEM_PROMPT = `
 
     Specific Extraction Rules:
     1. For 'Distributor's Summary':
+       - 'gross_sales' is the value labeled 'GROSS SALES'.
        - 'total_absorptions_odf' is the value in the 'TOTAL' row under the 'ODF' column.
        - 'total_absorptions_dist' is the value in the 'TOTAL' row under the 'DIST' column.
        - 'total_old_dutch_credits' is found next to 'TOTAL OLD DUTCH CREDITS'.
     2. For 'Distributor's Gross Profit':
        - 'distributor_gross_profit' is the final value labeled 'DISTRIBUTOR'S GROSS PROFIT'.
-    3. Date Validation:
+    3. For 'Payments Received':
+        - 'total_cash' is the value next to 'TOTAL CASH'.
+        - 'total_check' is the value next to 'TOTAL CHECK'.
+    4. Date Validation:
        - Compare the dates across all provided receipts. 
        - Set 'dates_consistent' to true only if all extracted dates match exactly.
        - If dates do NOT match, set 'dates_consistent' to false and return null for ALL other fields.
-    4. General:
+    5. General:
        - If a receipt type or specific field is not found, return null for that field.
        - Do not return ANYTHING other than a .json string.
        - Use raw text strings without markdown or other formatting.

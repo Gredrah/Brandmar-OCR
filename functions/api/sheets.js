@@ -10,7 +10,7 @@ function getCookie(request, name) {
 export async function onRequestPost(context) {
     try {
         const payload = await context.request.json();
-        
+
         // 1. Session & Auth Check
         const sessionId = getCookie(context.request, 'session_id');
         if (!sessionId) {
@@ -35,25 +35,27 @@ export async function onRequestPost(context) {
             "January", "Febuary", "March", "April", "May", "June", 
             "July", "August", "September", "October", "November", "December"
         ];
-        
+
         // Construct target: e.g., "March 2026" and Row 6 for Day 4
         const sheetName = `${monthNames[monthIndex]} ${year}`;
         const targetRow = day + 2; 
 
-        // 3. Mapping strictly for Columns J through P (7 columns total)
-        const range = `${sheetName}!J${targetRow}:P${targetRow}`;
+        // 1. Updated range: J to R (9 columns)
+        const range = `${sheetName}!J${targetRow}:R${targetRow}`;
 
+        // 2. Updated rowValues based on your specific requirements
         const rowValues = [
-            payload.gross_profit?.distributor_gross_profit || 0,       // Col J: Gross Sales
+            payload.distributor_summary?.gross_sales || 0,             // Col J: Gross Sales (from Summary)
             payload.distributor_summary?.total_absorptions_odf || 0,   // Col K: Total Abs (OD)
             payload.distributor_summary?.total_absorptions_dist || 0,  // Col L: Total Abs (Dist)
             payload.distributor_summary?.gst_hst_charged || 0,         // Col M: GST/HST
             payload.payments_received?.total_cash || 0,                // Col N: Cash Collected
             payload.payments_received?.total_check || 0,               // Col O: Total Chq.
-            payload.distributor_summary?.total_old_dutch_credits || 0  // Col P: Total OD Credits
+            payload.distributor_summary?.total_old_dutch_credits || 0, // Col P: Total OD Credits
+            "",                                                        // Col Q: Kristi's Magic (Empty)
+            payload.gross_profit?.distributor_gross_profit || 0        // Col R: Gross Profit
         ];
 
-        // 4. Update via PUT to avoid creating new rows
         const spreadsheetId = context.env.TARGET_SPREADSHEET_ID;
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`;
 
