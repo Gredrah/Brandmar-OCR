@@ -120,31 +120,29 @@ function buildRowValues(payload) {
 }
 
 async function validateAndHighlightRow(spreadsheetId, targetSheetId, sheetName, targetRow, accessToken) {
-    // Delay added to help ensure data is available for reading after the write operation
-    await new Promise(resolve => setTimeout(resolve, 1200)); 
+    // Delay increased to 2 seconds to ensure formulas calculate fully
+    await new Promise(resolve => setTimeout(resolve, 2000)); 
 
-    // 1. Fetch values from P and Q
+    // Fetch values with valueRenderOption=UNFORMATTED_VALUE to get raw numbers
     const readRange = `${encodeURIComponent(sheetName)}!P${targetRow}:Q${targetRow}`;
-    const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${readRange}`;
+    const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${readRange}?valueRenderOption=UNFORMATTED_VALUE`;
     
     const readResponse = await fetch(readUrl, {
         headers: { 'Authorization': `Bearer ${accessToken}` }
     });
     
-    if (!readResponse.ok) return null; // Fails gracefully if it can't read the sheet
+    if (!readResponse.ok) return null; 
     
     const readData = await readResponse.json();
 
     if (readData.values?.[0]) {
-        // Helper to strip currency formatting and parse to a clean float
-        const cleanNumber = (val) => Number.parseFloat((val || "0").toString().replaceAll(/[^0-9.-]+/g, ""));
-        
-        const valP = cleanNumber(readData.values[0][0]);
-        const valQ = cleanNumber(readData.values[0][1]);
+        // Since we are using unformatted values, we can parse them directly
+        const valP = Number.parseFloat(readData.values[0][0]) || 0;
+        const valQ = Number.parseFloat(readData.values[0][1]) || 0;
 
-        // 2. Compare the values (allowing for tiny floating-point math differences)
+        // Compare the values (allowing for tiny floating-point math differences)
         if (Math.abs(valP - valQ) > 0.01) {
-            // 3. Build the payload to color Column I (Index 8) light red
+            // Build the payload to color Column I (Index 8) light red
             const highlightReq = {
                 requests: [{
                     repeatCell: {
@@ -165,7 +163,7 @@ async function validateAndHighlightRow(spreadsheetId, targetSheetId, sheetName, 
                 }]
             };
 
-            // 4. Send the batchUpdate request
+            // Send the batchUpdate request to apply the highlight
             await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
                 method: 'POST',
                 headers: {
@@ -175,12 +173,12 @@ async function validateAndHighlightRow(spreadsheetId, targetSheetId, sheetName, 
                 body: JSON.stringify(highlightReq)
             });
 
-            // Return the warning message for the frontend
-            return `Column P ($${valP}) and Column Q ($${valQ}) do not match. Row highlighted red.`;
+            // Return detailed warning message
+            return `Data Mismatch Found: Column P is $${valP.toFixed(2)}, but Column Q (Calculated) is $${valQ.toFixed(2)}. Row highlighted red in Column I.`;
         }
     }
     
-    return null; // Return null if everything matches
+    return null; 
 }
 
 export async function onRequestPost(context) {
