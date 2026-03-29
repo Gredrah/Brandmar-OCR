@@ -21,9 +21,8 @@ export async function onRequestPost(context) {
             return new Response(JSON.stringify({ error: "Session expired. Please log in again." }), { status: 401 });
         }
 
-        // 1. Parse the date to target the correct Monthly Sheet and Row
-        // Assumes date format is MM/DD/YYYY from Gemini
-        const dateStr = payload.distributor_summary?.date || payload.gross_profit?.date;
+        // 1. Parse date for Sheet Name and Row
+        const dateStr = payload.distributor_summary?.date || payload.gross_profit?.date || payload.payments_received?.date;
         if (!dateStr) throw new Error("No date found in OCR results.");
 
         const [mStr, dStr, yStr] = dateStr.split('/');
@@ -36,30 +35,26 @@ export async function onRequestPost(context) {
             "July", "August", "September", "October", "November", "December"
         ];
         
-        // Construct sheet name (e.g., "March 2026")
+        // Note: Using "Febuary" to match your CSV filename spelling
         const sheetName = `${monthNames[monthIndex]} ${year}`;
-        
-        // Calculate Row: Day 1 is row 3 in your sample (after headers)
-        const targetRow = day + 2; 
+        const targetRow = day + 2; // Day 1 is Row 3 in your template
 
-        // 2. Map data to your specific template columns:
-        // Based on your CSV, data starts at Column K (OD Absorptions) 
-        // through Column S (Cash)
+        // 2. Updated Mapping for Columns K through S
         const range = `${sheetName}!K${targetRow}:S${targetRow}`;
 
         const rowValues = [
-            payload.distributor_summary?.total_absorptions_odf || 0,   // Col K
-            payload.distributor_summary?.total_absorptions_dist || 0,  // Col L
-            payload.distributor_summary?.gst_hst_charged || 0,         // Col M
-            "", // Col N (Cash Collected/Empty)
-            payload.payments_received?.total_check || 0,               // Col O
-            payload.distributor_summary?.total_old_dutch_credits || 0, // Col P
-            "", // Col Q (Kristi's Magic)
-            payload.gross_profit?.distributor_gross_profit || 0,       // Col R
-            payload.payments_received?.total_cash || 0                 // Col S
+            payload.distributor_summary?.total_absorptions_odf || 0,   // Col K: Total Abs (OD)
+            payload.distributor_summary?.total_absorptions_dist || 0,  // Col L: Total Abs (Dist)
+            payload.distributor_summary?.gst_hst_charged || 0,         // Col M: GST/HST
+            payload.payments_received?.total_cash || 0,                // Col N: Cash Coll.
+            payload.payments_received?.total_check || 0,               // Col O: Total Chq.
+            payload.distributor_summary?.total_old_dutch_credits || 0, // Col P: Total OD Credits
+            "",                                                        // Col Q: Kristi's Magic (Empty)
+            payload.gross_profit?.distributor_gross_profit || 0,       // Col R: Gross Profit
+            payload.payments_received?.total_cash || 0                 // Col S: Cash
         ];
 
-        // 3. Update the specific row using PUT
+        // 3. Execute the Update
         const spreadsheetId = context.env.TARGET_SPREADSHEET_ID;
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`;
 
