@@ -205,7 +205,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             exportBtn.disabled = true;
             statusMsg.innerHTML = 'Pushing to Google Sheets...';
 
-            await BrandmarAPI.exportToSheet(selectedSheetId, dataToExport);
+            const result = await BrandmarAPI.exportToSheet(selectedSheetId, dataToExport);
+            
+            if (result.warning) {
+                statusMsg.innerHTML = `<span style="color: orange; font-weight: bold;">Exported with Warning: ${result.warning}</span>`;
+            } else {
+                statusMsg.innerHTML = '<span style="color: green; font-weight: bold;">Successfully added to Google Sheets!</span>';
+            }
+            
             statusMsg.innerHTML = '<span style="color: green; font-weight: bold;">Successfully added to Google Sheets!</span>';
         } catch (error) {
             statusMsg.innerHTML = `<span style="color: red; font-weight: bold;">Export Error: ${error.message}</span>`;

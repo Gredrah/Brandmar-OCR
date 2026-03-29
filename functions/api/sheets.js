@@ -110,6 +110,67 @@ function buildRowValues(payload) {
     ];
 }
 
+async function validateAndHighlightRow(spreadsheetId, targetSheetId, sheetName, targetRow, accessToken) {
+    // 1. Fetch values from P and Q
+    const readRange = `${encodeURIComponent(sheetName)}!P${targetRow}:Q${targetRow}`;
+    const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${readRange}`;
+    
+    const readResponse = await fetch(readUrl, {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+    
+    if (!readResponse.ok) return null; // Fails gracefully if it can't read the sheet
+    
+    const readData = await readResponse.json();
+
+    if (readData.values?.[0]) {
+        // Helper to strip currency formatting and parse to a clean float
+        const cleanNumber = (val) => Number.parseFloat((val || "0").toString().replaceAll(/[^0-9.-]+/g, ""));
+        
+        const valP = cleanNumber(readData.values[0][0]);
+        const valQ = cleanNumber(readData.values[0][1]);
+
+        // 2. Compare the values (allowing for tiny floating-point math differences)
+        if (Math.abs(valP - valQ) > 0.01) {
+            // 3. Build the payload to color Column I (Index 8) light red
+            const highlightReq = {
+                requests: [{
+                    repeatCell: {
+                        range: {
+                            sheetId: targetSheetId,
+                            startRowIndex: targetRow - 1, // 0-indexed, so Row 6 is index 5
+                            endRowIndex: targetRow,
+                            startColumnIndex: 8,          // Column I
+                            endColumnIndex: 9             // Stops before Column J
+                        },
+                        cell: {
+                            userEnteredFormat: {
+                                backgroundColor: { red: 1, green: 0.6, blue: 0.6 } 
+                            }
+                        },
+                        fields: 'userEnteredFormat.backgroundColor'
+                    }
+                }]
+            };
+
+            // 4. Send the batchUpdate request
+            await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(highlightReq)
+            });
+
+            // Return the warning message for the frontend
+            return `Column P ($${valP}) and Column Q ($${valQ}) do not match. Row highlighted red.`;
+        }
+    }
+    
+    return null; // Return null if everything matches
+}
+
 export async function onRequestPost(context) {
     try {
         const payload = await context.request.json();
@@ -142,10 +203,24 @@ export async function onRequestPost(context) {
             })
         });
         if (!response.ok) {
-            const errorText = await response.text();
+            const errorText = await writeResponse.text();
             throw new Error(`Google API Error: ${errorText}`);
         }
-        return new Response(JSON.stringify({ success: true }), { status: 200 });
+
+        const validationWarning = await validateAndHighlightRow(
+            spreadsheetId, 
+            targetSheetId, 
+            sheetName, 
+            targetRow, 
+            accessToken
+        );
+
+        // Pass the warning (or null) back to the client
+        return new Response(JSON.stringify({ 
+            success: true,
+            warning: validationWarning
+        }), { status: 200 });
+
     } catch (err) {
         return new Response(JSON.stringify({ error: err.message }), { status: 500 });
     }
