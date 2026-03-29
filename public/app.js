@@ -1,7 +1,73 @@
+
 /**
  * @file app.js
  * @description Client-side logic for the Distributor OCR Processor.
+ *
+ * USAGE:
+ * 1. User selects up to 3 receipt images and submits the form (#ocr-form).
+ * 2. Images are compressed client-side, displayed for debugging, and sent to the backend for OCR processing.
+ * 3. OCR results are shown in a textarea (#json-output).
+ * 4. User can edit the JSON and export it to Google Sheets using the export button (#export-btn).
+ * 5. Status and error messages are displayed in #status-message.
  */
+
+/**
+ * BRANDMAR OCR - FRONTEND API
+ * All network calls are encapsulated here for easy UI integration.
+ */
+const BrandmarAPI = {
+    // 1. Process images through Gemini
+    /**
+     * processReceipts - Takes an array of image files, sends them to the backend for OCR processing, and returns the extracted data.
+     * @param {File[]} imageFiles - Array of image files to process.
+     * @returns {Promise<Object>} - A promise resolving to the extracted data.
+     */
+    async processReceipts(imageFiles) {
+        const formData = new FormData();
+        imageFiles.forEach(file => formData.append('images', file));
+
+        const response = await fetch('/api/process', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) throw new Error(await response.text());
+        return await response.json();
+    },
+
+    // 2. Fetch available workbooks from Google Drive
+    /**
+     * getAvailableWorkbooks - Fetches a list of available Google Sheets workbooks that the user can export to.
+     * @returns {Promise<Array>} - A promise resolving to an array of available workbooks.
+     */
+    async getAvailableWorkbooks() {
+        const response = await fetch('/api/workbooks', { method: 'GET' });
+        if (!response.ok) {
+            if (response.status === 401) throw new Error("unauthorized");
+            throw new Error("Failed to fetch workbooks");
+        }
+        return await response.json(); 
+    },
+
+    // 3. Export data to the selected sheet
+    /**
+     * exportToSheet - Exports the extracted data to the specified Google Sheet.
+     * @param {string} spreadsheetId - The ID of the target spreadsheet.
+     * @param {Object} extractedData - The data to export.
+     * @returns {Promise<Object>} - A promise resolving to the export result.
+     */
+    async exportToSheet(spreadsheetId, extractedData) {
+        // Attach the target ID to the payload
+        const payload = { target_spreadsheet_id: spreadsheetId, ...extractedData };
+        const response = await fetch('/api/sheets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) throw new Error(await response.text());
+        return await response.json();
+    }
+};
 
 // Native Image Compression for Token Reduction
 async function compressImage(file, maxDimension = 1200, quality = 0.85) {
@@ -71,111 +137,68 @@ function renderDebugImages(compressedFiles) {
     });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const ocrForm = document.getElementById('ocr-form');
-    const exportBtn = document.getElementById('export-btn');
-    const jsonOutput = document.getElementById('json-output');
-    const statusMsg = document.getElementById('status-message');
+/**
+ * UI LOGIC & EVENT LISTENERS
+ */
+document.addEventListener('DOMContentLoaded', async () => {
+    const authSection = document.getElementById('auth-section');
+    const workbookSection = document.getElementById('workbook-section');
+    const workbookSelect = document.getElementById('workbook-select');
+    const exportBtn = document.getElementById('export-btn'); // Assuming this is your export button ID
+    const statusMsg = document.getElementById('status-msg'); // Assuming this is your status div ID
+    
+    let currentExtractedData = null; // Store data temporarily after Gemini process
 
-    if (!ocrForm) return;
-
-    // --- LISTENER 1: Handle OCR Image Submission ---
-    ocrForm.addEventListener('submit', async (event) => {
-        event.preventDefault(); 
-
-        const fileInput = document.getElementById('receipts');
-        const submitBtn = document.getElementById('submit-btn');
-        const files = Array.from(fileInput.files);
-
-        if (files.length === 0) {
-            statusMsg.innerHTML = '<span style="color: red; font-weight: bold;">Please select at least one receipt image.</span>';
-            return;
-        }
-
-        if (files.length > 3) {
-            statusMsg.innerHTML = '<span style="color: red; font-weight: bold;">Too many files! Please select a maximum of 3.</span>';
-            fileInput.value = ''; 
-            return;
-        }
-
-        submitBtn.disabled = true;
-        exportBtn.style.display = 'none'; // Hide export button during new upload
-        jsonOutput.value = "Compressing images..."; // Changed to .value for textarea
+    // 1. Check Auth and Load Workbooks on Page Load
+    try {
+        const workbooks = await BrandmarAPI.getAvailableWorkbooks();
         
-        try {
-            const formData = new FormData();
-            const compressedFiles = [];
-
-            for (const element of files) {
-                const compressedFile = await compressImage(element);
-                compressedFiles.push(compressedFile);
-                formData.append('receipts', compressedFile); 
-            }
-
-            renderDebugImages(compressedFiles);
-            statusMsg.innerText = "Sending batch to Gemini Flash...";
-
-            const response = await fetch('/api/process', {
-                method: 'POST',
-                body: formData
+        // If successful, user is logged in. Hide Auth, show Workbook Dropdown.
+        authSection.style.display = 'none';
+        workbookSection.style.display = 'block';
+        
+        // Populate the dropdown
+        workbookSelect.innerHTML = ''; // Clear loading text
+        if (workbooks.length === 0) {
+            workbookSelect.innerHTML = '<option value="">No Brandmar workbooks found</option>';
+        } else {
+            workbooks.forEach(sheet => {
+                const option = document.createElement('option');
+                option.value = sheet.id;
+                option.textContent = sheet.name;
+                workbookSelect.appendChild(option);
             });
-
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.error || `Server returned status ${response.status}`);
-            }
-
-            // Write results to the textarea and show the export button
-            jsonOutput.value = JSON.stringify(data, null, 2);
-            statusMsg.innerHTML = '<span style="color: green; font-weight: bold;">Processing Complete! Review the data below.</span>';
-            exportBtn.style.display = 'block';
-
-        } catch (error) {
-            statusMsg.innerHTML = `<span style="color: red; font-weight: bold;">Error: ${error.message}</span>`;
-            jsonOutput.value = "";
-        } finally {
-            submitBtn.disabled = false;
         }
-    });
+    } catch (error) {
+        if (error.message === "unauthorized") {
+            // User needs to log in. Show Auth, hide Workbooks.
+            authSection.style.display = 'block';
+            workbookSection.style.display = 'none';
+        } else {
+            console.error("Error loading workbooks:", error);
+            workbookSelect.innerHTML = '<option value="">Error loading workbooks</option>';
+        }
+    }
 
-    // --- LISTENER 2: Handle Exporting to Google Sheets ---
+    // 2. The Export Button Listener
     exportBtn.addEventListener('click', async () => {
-        const rawEditedData = jsonOutput.value;
+        if (!currentExtractedData) {
+            statusMsg.innerHTML = `<span style="color: red;">No data to export. Please process images first.</span>`;
+            return;
+        }
 
-        let finalPayload;
-
-        try {
-            finalPayload = JSON.parse(rawEditedData);
-        } catch (error) {
-            statusMsg.innerHTML = '<span style="color: red; font-weight: bold;">Error: Invalid JSON format. Please check your edits.</span>';
+        const selectedSheetId = workbookSelect.value;
+        if (!selectedSheetId) {
+            statusMsg.innerHTML = `<span style="color: red;">Please select a target workbook.</span>`;
             return;
         }
 
         exportBtn.disabled = true;
-        statusMsg.innerText = "Sending to Google Sheets...";
+        statusMsg.innerHTML = 'Pushing to Google Sheets...';
 
         try {
-            const response = await fetch('/api/sheets', { 
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(finalPayload)
-            });
-
-            const result = await response.json();
-
-            // NEW: Catching the 401 Unauthorized specifically
-            if (!response.ok) {
-                if (response.status === 401) {
-                    throw new Error('Not authorized. Please click "Authorize Google Sheets" at the top of the page first.');
-                }
-                throw new Error(result.error || "Failed to push to Sheets");
-            }
-
+            await BrandmarAPI.exportToSheet(selectedSheetId, currentExtractedData);
             statusMsg.innerHTML = '<span style="color: green; font-weight: bold;">Successfully added to Google Sheets!</span>';
-            
         } catch (error) {
             statusMsg.innerHTML = `<span style="color: red; font-weight: bold;">Export Error: ${error.message}</span>`;
         } finally {

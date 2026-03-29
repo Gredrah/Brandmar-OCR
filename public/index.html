@@ -23,9 +23,15 @@
         <span style="margin-left: 10px; font-size: 0.9em; color: #555;">(Required before exporting)</span>
     </div>
 
-    <p>Select up to 3 receipt images (Summary, Gross Profit, Payments).</p>
+    <div id="workbook-section" style="display: none; margin-bottom: 20px; padding: 15px; background-color: #e9ecef; border-radius: 8px; border: 1px solid #ccc;">
+        <strong>Step 2:</strong>
+        <label for="workbook-select" style="font-weight: bold; margin-left: 10px;">Select Target Workbook:</label>
+        <select id="workbook-select" style="margin-left: 10px; padding: 6px; min-width: 250px; border-radius: 4px;">
+            <option value="">Loading workbooks...</option>
+        </select>
+    </div>
 
-    <form id="ocr-form">
+    <p>Select up to 3 receipt images (Summary, Gross Profit, Payments).</p>
 
     <form id="ocr-form">
         <div class="upload-box">

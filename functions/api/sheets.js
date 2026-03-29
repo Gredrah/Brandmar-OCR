@@ -56,7 +56,11 @@ export async function onRequestPost(context) {
             payload.gross_profit?.distributor_gross_profit || 0        // Col R: Gross Profit
         ];
 
-        const spreadsheetId = context.env.TARGET_SPREADSHEET_ID;
+        // 3. Spreadsheet ID from payload
+        const spreadsheetId = payload.target_spreadsheet_id; 
+        
+        if (!spreadsheetId) throw new Error("No target spreadsheet ID provided.");
+
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`;
 
         const response = await fetch(url, {
