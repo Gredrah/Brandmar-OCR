@@ -109,13 +109,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     ocrForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // Use our JavaScript array instead of the input element's files
         if (scannedFiles.length === 0) return;
 
         submitBtn.disabled = true;
         submitBtn.textContent = 'Processing...';
-        showStatus('Compressing images and sending to AI...', 'info');
         resultSection.hidden = true;
+
+        // THE FIX: Set the text AND apply the 'info' CSS class
+        statusBox.textContent = 'Compressing images and sending to AI...';
+        statusBox.className = 'info'; 
 
         try {
             const compressedFiles = await Promise.all(scannedFiles.map(f => BrandmarAPI.compressImage(f)));
@@ -125,13 +127,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             resultSection.hidden = false;
             
             if (extractedData.metadata?.dates_consistent === false) {
-                showStatus('Warning: Dates across receipts do not match. Please verify carefully.', 'warning'); // UPDATED
+                // Apply the 'warning' CSS class
+                statusBox.textContent = 'Warning: Dates across receipts do not match. Please verify carefully.';
+                statusBox.className = 'warning';
             } else {
-                showStatus('Extraction complete! Review data below.', 'success'); // UPDATED
+                // Apply the 'success' CSS class
+                statusBox.textContent = 'Extraction complete! Review data below.';
+                statusBox.className = 'success';
             }
 
         } catch (error) {
-            showStatus(`Error: ${error.message}`, 'error'); // UPDATED
+            // Apply the 'error' CSS class
+            statusBox.textContent = `Error: ${error.message}`;
+            statusBox.className = 'error';
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Process Receipts';
