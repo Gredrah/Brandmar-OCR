@@ -22,8 +22,6 @@
         </select>
     </div>
 
-    <p id="statusBox"></p>
-
     <div>
         <p class="helper-text"><strong>Step 2:</strong> Scan or Upload Receipts (Summary, Gross Profit, Payments)</p>
         <form id="ocr-form">
@@ -39,14 +37,14 @@
 
     <img id="preview" width="300">
 
+    <p id="statusBox"></p>
+
     <div id="result-section" hidden>
         <p class="helper-text"><strong>Step 3:</strong> Review and edit the extracted data.</p>
         <textarea id="json-output"></textarea>
         
         <button id="export-btn">Confirm & Send to Sheets</button>
     </div>
-
-    <button>Upload</button>
 </div>
 <script src="Website.js"></script>
 <script src="brandmar-api.js"></script>
