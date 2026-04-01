@@ -1,3 +1,5 @@
+const GOOGLE_API_KEY = AIzaSyA6_RRqlSfCS-GrQ8651xyjGFQNe5fMOMo
+
 document.addEventListener('DOMContentLoaded', async () => {
     // DOM Elements
     const authSection = document.getElementById('auth-section');
@@ -10,42 +12,78 @@ document.addEventListener('DOMContentLoaded', async () => {
     const resultSection = document.getElementById('result-section');
     const jsonOutput = document.getElementById('json-output');
     const exportBtn = document.getElementById('export-btn');
+    const pickerBtn = document.getElementById('picker-btn');
 
     // ========================================================================
     // 1. Authentication & Initialization
     // ========================================================================
     try {
-        const isAuth = await BrandmarAPI.isAuthenticated();
-        if (isAuth) {
-            authSection.hidden = true;
-            workbookSection.hidden = false;
-            
-            const workbooks = await BrandmarAPI.getAvailableWorkbooks();
-            workbookSelect.innerHTML = ''; 
-            
-            if (workbooks.length === 0) {
-                workbookSelect.innerHTML = '<option value="">No Brandmar workbooks found</option>';
-            } else {
-                workbooks.forEach(sheet => {
-                    const option = document.createElement('option');
-                    option.value = sheet.id;
-                    option.textContent = sheet.name;
-                    workbookSelect.appendChild(option);
-                });
-            }
+        const workbooks = await BrandmarAPI.getAvailableWorkbooks();
+        
+        // If the call succeeds, the user is authenticated
+        authSection.hidden = true;
+        workbookSection.hidden = false;
+        
+        workbookSelect.innerHTML = ''; 
+        
+        if (workbooks.length === 0) {
+            workbookSelect.innerHTML = '<option value="">No previous workbooks found. Authorize one below.</option>';
         } else {
-            // User is not logged in
-            authSection.hidden = false;
-            workbookSection.hidden = true;
+            workbooks.forEach(sheet => {
+                const option = document.createElement('option');
+                option.value = sheet.id;
+                option.textContent = sheet.name;
+                workbookSelect.appendChild(option);
+            });
         }
     } catch (error) {
+        // If 401 unauthorized, show the login screen
         authSection.hidden = false;
         workbookSection.hidden = true;
         console.error("Auth check failed:", error);
     }
+    // ========================================================================
+    // 2. Google Picker Initialization
+    // ========================================================================
+    pickerBtn.addEventListener('click', async () => {
+        try {
+            pickerBtn.textContent = 'Opening Drive...';
+            pickerBtn.disabled = true;
+            
+            const selectedDoc = await BrandmarAPI.openGooglePicker(GOOGLE_API_KEY);
+            
+            // Clear the "No previous workbooks" placeholder if it exists
+            if (workbookSelect.options.length > 0 && workbookSelect.options[0].value === "") {
+                workbookSelect.innerHTML = '';
+            }
+
+            // Check if the selected sheet is already in the dropdown to avoid duplicates
+            let exists = Array.from(workbookSelect.options).some(opt => opt.value === selectedDoc.id);
+            
+            if (!exists) {
+                const option = document.createElement('option');
+                option.value = selectedDoc.id;
+                option.textContent = selectedDoc.name;
+                workbookSelect.appendChild(option);
+            }
+
+            // Automatically select the newly authorized sheet in the dropdown
+            workbookSelect.value = selectedDoc.id;
+            
+            showStatus(`Successfully authorized: ${selectedDoc.name}`, 'success');
+
+        } catch (error) {
+            if (error.message !== "User cancelled picker.") {
+                showStatus(`Picker Error: ${error.message}`, 'error');
+            }
+        } finally {
+            pickerBtn.textContent = 'Authorize a New Sheet';
+            pickerBtn.disabled = false;
+        }
+    });
 
     // ========================================================================
-    // 2. Handle Continuous Camera Scanning
+    // 3. Handle Continuous Camera Scanning
     // ========================================================================
     const addPhotoBtn = document.getElementById('add-photo-btn');
     let scannedFiles = []; // Array to hold our captured photos
@@ -104,7 +142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ========================================================================
-    // 3. Process Receipts via SDK
+    // 4. Process Receipts via SDK
     // ========================================================================
     ocrForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -147,7 +185,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ========================================================================
-    // 4. Export to Google Sheets via SDK
+    // 5. Export to Google Sheets via SDK
     // ========================================================================
     exportBtn.addEventListener('click', async () => {
         try {

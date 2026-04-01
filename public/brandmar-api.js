@@ -51,6 +51,65 @@ globalThis.BrandmarAPI = {
     },
 
     /**
+     * Fetches the raw access token required to initialize the Google Picker.
+     * This token is short-lived and should only be used for the Picker initialization.
+     * The backend will verify the session cookie and return the token if valid.
+     * * @returns {Promise<string>} - The Google API access token.
+     */
+    async getAuthToken() {
+        const response = await fetch('/api/auth/token', { method: 'GET' });
+        if (!response.ok) {
+            if (response.status === 401) throw new Error("unauthorized");
+            throw new Error("Failed to fetch auth token");
+        }
+        const data = await response.json();
+        return data.access_token;
+    },
+
+    /**
+     * Opens the Google Picker UI, filtered to Google Sheets.
+     * Returns the selected spreadsheet's ID and name.
+     * * @param {string} developerKey - The Google API developer key for the Picker.
+     * * @returns {Promise<{id: string, name: string}>} - The selected spreadsheet's ID and name.
+     */
+    async openGooglePicker(developerKey) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const token = await this.getAuthToken();
+                
+                if (typeof gapi === 'undefined') {
+                    return reject(new Error("Google API script not loaded."));
+                }
+
+                gapi.load('picker', { 'callback': createPicker });
+
+                function createPicker() {
+                    const view = new google.picker.DocsView(google.picker.ViewId.SPREADSHEETS);
+                    view.setMimeTypes('application/vnd.google-apps.spreadsheet');
+                    view.setQuery('Brandmar Holdings'); 
+
+                    const picker = new google.picker.PickerBuilder()
+                        .addView(view)
+                        .setOAuthToken(token)
+                        .setDeveloperKey(developerKey)
+                        .setCallback((data) => {
+                            if (data[google.picker.Response.ACTION] == google.picker.Action.PICKED) {
+                                const doc = data[google.picker.Response.DOCUMENTS][0];
+                                resolve({ id: doc[google.picker.Document.ID], name: doc[google.picker.Document.NAME] });
+                            } else if (data[google.picker.Response.ACTION] == google.picker.Action.CANCEL) {
+                                reject(new Error("User cancelled picker."));
+                            }
+                        })
+                        .build();
+                    picker.setVisible(true);
+                }
+            } catch (error) {
+                reject(error);
+            }
+        });
+    },
+
+    /**
      * Native Image Compression for Token Reduction.
      * Shrinks large photos client-side before they are sent to the server.
      * * @param {File} file - The raw image file from the input element.

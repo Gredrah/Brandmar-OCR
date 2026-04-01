@@ -3,6 +3,7 @@
 <head>
     <title>Receipt Scanner</title>
     <link rel="stylesheet" href="Website.css">
+    <script src="https://apis.google.com/js/api.js"></script>
 </head>
 <body>
 
@@ -17,9 +18,14 @@
 
     <div id="workbook-section" hidden>
         <p class="helper-text"><strong>Step 1:</strong> Select Target Workbook</p>
-        <select id="workbook-select">
-            <option value="">Loading workbooks...</option>
+        
+        <select id="workbook-select" style="margin-bottom: 15px; width: 100%; padding: 8px;">
+            <option value="">Loading previous workbooks...</option>
         </select>
+        
+        <p class="helper-text" style="margin-bottom: 10px;">— OR —</p>
+        
+        <button type="button" id="picker-btn" style="background-color: #2196F3; width: 100%;">Authorize a New Sheet</button>
     </div>
 
     <div>
