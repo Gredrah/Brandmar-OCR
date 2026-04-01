@@ -11,8 +11,9 @@ body {
     color: #333;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     min-height: 100vh;
+    padding: 40px 20px;
 }
 .container {
     background: rgb(21, 21, 48);
