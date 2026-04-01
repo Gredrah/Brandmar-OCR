@@ -92,6 +92,7 @@ globalThis.BrandmarAPI = {
                         .addView(view)
                         .setOAuthToken(token)
                         .setDeveloperKey(developerKey)
+                        .setAppId(appId)
                         .setCallback((data) => {
                             if (data[google.picker.Response.ACTION] == google.picker.Action.PICKED) {
                                 const doc = data[google.picker.Response.DOCUMENTS][0];
