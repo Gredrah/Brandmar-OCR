@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service - Receipt Scanner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #2196F3;
+        }
+        .last-updated {
+            font-style: italic;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        a {
+            color: #2196F3;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Terms of Service</h1>
+    <p class="last-updated">Last Updated: April 1, 2026</p>
+
+    <h2>1. Acceptance of Terms</h2>
+    <p>By accessing and using the Receipt Scanner application (the "Service"), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by these terms, please do not use this Service.</p>
+
+    <h2>2. Description of Service</h2>
+    <p>The Service is a web-based utility that allows authorized users to upload images of financial receipts, extracts structured data from those images using artificial intelligence, and exports the resulting data into connected Google Sheets ("Brandmar Holdings" workbooks).</p>
+
+    <h2>3. Third-Party Services and Data Flow</h2>
+    <p>To function, the Service relies heavily on third-party infrastructure. By using the Service, you acknowledge and agree to the following data flows:</p>
+    <ul>
+        <li><strong>Google OAuth & APIs:</strong> The Service requires access to your Google Account (specifically Google Drive and Google Sheets) to read workbook lists and write extracted data. Your authorization tokens are temporarily stored using Cloudflare KV.</li>
+        <li><strong>Google Gemini AI:</strong> Images of receipts uploaded to the Service are transmitted securely to Google's Gemini API for Optical Character Recognition (OCR) and data extraction.</li>
+        <li><strong>Cloudflare:</strong> The Service is hosted and routed through Cloudflare Pages and Workers.</li>
+    </ul>
+
+    <h2>4. Accuracy of Data and User Responsibility</h2>
+    <p>The Service uses artificial intelligence to read and extract text from images. <strong>AI is prone to errors, omissions, and hallucinations.</strong></p>
+    <p>You acknowledge that the Service does not guarantee the accuracy, completeness, or reliability of the extracted data. It is your sole responsibility to review, verify, and edit all extracted data in the provided user interface <em>before</em> confirming the export to Google Sheets. We are not liable for accounting errors, financial discrepancies, or data corruption resulting from the use of this Service.</p>
+
+    <h2>5. Privacy and Data Security</h2>
+    <p>We do not permanently store your receipt images or extracted financial data. Images are held in memory only as long as required to process them via the Gemini API, and extracted data is discarded from our servers once successfully pushed to your Google Sheet. Authentication tokens are encrypted and subject to automatic expiration. However, we cannot guarantee absolute security against unauthorized access or breaches.</p>
+
+    <h2>6. Permitted Use</h2>
+    <p>You agree to use the Service only for its intended lawful purpose. You represent and warrant that you have the legal right and authority to upload, process, and store the receipts and financial data you transmit through the Service.</p>
+
+    <h2>7. Disclaimer of Warranties</h2>
+    <p>The Service is provided on an "AS IS" and "AS AVAILABLE" basis. We expressly disclaim all warranties of any kind, whether express or implied, including, but not limited to, the implied warranties of merchantability, fitness for a particular purpose, and non-infringement. We make no warranty that the Service will be uninterrupted, timely, secure, or error-free.</p>
+
+    <h2>8.
