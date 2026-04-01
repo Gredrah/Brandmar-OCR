@@ -80,6 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         scannedFiles.forEach((file, index) => {
             // Create a wrapper for the image and its delete button
             const wrapper = document.createElement('div');
+            wrapper.className = 'preview-wrapper'; // <--- ADD THIS LINE
             
             const img = document.createElement('img');
             img.src = URL.createObjectURL(file);
