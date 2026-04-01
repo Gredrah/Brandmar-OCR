@@ -223,7 +223,7 @@ globalThis.BrandmarAPI = {
    ========================================================================== */
 
 // Helper to render compressed images to the DOM for debugging
-function renderDebugImages(compressedFiles) {
+/*function renderDebugImages(compressedFiles) {
     let debugContainer = document.getElementById('debug-images');
     if (!debugContainer) {
         debugContainer = document.createElement('div');
@@ -375,4 +375,4 @@ document.addEventListener('DOMContentLoaded', async () => {
             submitBtn.textContent = 'Process Receipts';
         }
     });
-});
+});*/
