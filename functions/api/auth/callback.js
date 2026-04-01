@@ -45,15 +45,22 @@ export async function onRequestGet(context) {
 
         // Generate a random session ID
         const sessionId = crypto.randomUUID();
+        
+        // Fallback to 1 hour (3600 seconds) just in case Google's payload is missing it
+        const expiresIn = tokens.expires_in || 3600;
 
         // Store the access token in Cloudflare KV 
         await context.env.AUTH_KV.put(`session:${sessionId}`, tokens.access_token, {
-            expirationTtl: tokens.expires_in
+            expirationTtl: expiresIn
         });
 
         const headers = new Headers();
-        // Set the new session cookie
-        headers.append('Set-Cookie', `session_id=${sessionId}; HttpOnly; Secure; Path=/; SameSite=Lax; Max-Age=${tokens.expires_in}`);
+        
+        // Prevent caching of the callback redirect
+        headers.append('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        
+        // Set the new session cookie using the safe expiresIn variable
+        headers.append('Set-Cookie', `session_id=${sessionId}; HttpOnly; Secure; Path=/; SameSite=Lax; Max-Age=${expiresIn}`);
         
         // 3. IMPORTANT: Clear the temporary state cookie now that we are done with it
         headers.append('Set-Cookie', `oauth_state=; HttpOnly; Secure; Path=/; SameSite=Lax; Max-Age=0`);

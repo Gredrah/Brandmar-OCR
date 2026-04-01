@@ -18,6 +18,11 @@ export async function onRequestGet(context) {
     
     const headers = new Headers();
     headers.append('Location', authUrl);
+    
+    // Prevent browser from caching 302 redirect responses to avoid issues with stale state parameters
+    headers.append('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    headers.append('Pragma', 'no-cache');
+    
     headers.append('Set-Cookie', `oauth_state=${state}; HttpOnly; Secure; Path=/; SameSite=Lax; Max-Age=600`);
 
     return new Response(null, { status: 302, headers: headers });
