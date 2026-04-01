@@ -51,14 +51,26 @@ globalThis.BrandmarAPI = {
     },
 
     /**
+     * Fetches the auth payload (token and client ID) from our backend session.
+     * @returns {Promise<{access_token: string, client_id: string}>}
+     */
+    async getAuthResponse() {
+        const response = await fetch('/api/auth/token', { method: 'GET' });
+        if (!response.ok) {
+            throw new Error(`Failed to fetch auth session: ${response.status}`);
+        }
+        return await response.json();
+    },
+
+    /**
      * Fetches the raw access token required to initialize the Google Picker.
      * This token is short-lived and should only be used for the Picker initialization.
      * The backend will verify the session cookie and return the token if valid.
      * * @returns {Promise<string>} - The Google API access token.
      */
-    async getAuthResponse() {
+    async getAuthToken() {
         const authData = await this.getAuthResponse();
-        return await authData.access_token;
+        return authData.access_token;
     },
 
     /**
@@ -70,12 +82,11 @@ globalThis.BrandmarAPI = {
     async openGooglePicker(developerKey) {
         return new Promise(async (resolve, reject) => {
             try {
-                // Now returns { access_token, client_id }
+                // This will now successfully fetch the token and client ID
                 const authData = await this.getAuthResponse(); 
                 const token = authData.access_token;
                 const clientId = authData.client_id;
                 
-                // Extract the numeric App ID from the Client ID string
                 const appId = clientId.split('-')[0];
 
                 if (typeof gapi === 'undefined') {
@@ -212,7 +223,7 @@ globalThis.BrandmarAPI = {
    ========================================================================== */
 
 // Helper to render compressed images to the DOM for debugging
-/* function renderDebugImages(compressedFiles) {
+/*function renderDebugImages(compressedFiles) {
     let debugContainer = document.getElementById('debug-images');
     if (!debugContainer) {
         debugContainer = document.createElement('div');
@@ -364,4 +375,4 @@ document.addEventListener('DOMContentLoaded', async () => {
             submitBtn.textContent = 'Process Receipts';
         }
     });
-}); */
+});*/
