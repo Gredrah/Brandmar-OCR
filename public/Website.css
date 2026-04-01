@@ -50,6 +50,13 @@ input[type="file"] {
     gap: 15px;
     margin-top: 15px;
 }
+.preview-container button {
+    background-color: red;
+    color: white;
+}
+.preview-container button:hover {
+    background-color: darkred;
+}
 button {
     margin-top: 15px;
     padding: 10px 20px;
