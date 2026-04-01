@@ -1,12 +1,5 @@
 // webapp/functions/api/auth/callback.js
-
-// Helper function to extract cookies
-function getCookie(request, name) {
-    const cookieString = request.headers.get('Cookie');
-    if (!cookieString) return null;
-    const match = cookieString.match(new RegExp('(^| )' + name + '=([^;]+)'));
-    return match ? match[2] : null;
-}
+import './authHelpers.js';
 
 // Callback Endpoint: GET /api/auth/callback
 // Usage: This is the redirect URI set in the Google Cloud Console for your OAuth credentials. Google will send users here after they authorize the app.
