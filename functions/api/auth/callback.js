@@ -74,6 +74,6 @@ export async function onRequestGet(context) {
         });
 
     } catch (error) {
-        return new Response(`Authentication Error: ${error.message}`, { status: 500 });
+        return new Response(`Authentication Error: ${error.message}\nStack: ${error.stack}`, { status: 500 });
     }
 }
