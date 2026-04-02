@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ocrForm = document.getElementById('ocr-form');
     const submitBtn = document.getElementById('submit-btn');
     const resultSection = document.getElementById('result-section');
-    const jsonOutput = document.getElementById('json-output');
     const exportBtn = document.getElementById('export-btn');
     const pickerBtn = document.getElementById('picker-btn');
     const statusBox = document.getElementById('statusBox');
@@ -162,7 +161,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             const compressedFiles = await Promise.all(scannedFiles.map(f => BrandmarAPI.compressImage(f)));
             const extractedData = await BrandmarAPI.processReceipts(compressedFiles);
 
-            jsonOutput.value = JSON.stringify(extractedData, null, 2);
+            // Populate Summary Fields
+            document.getElementById('val-sum-date').value = extractedData.distributor_summary?.date || '';
+            document.getElementById('val-gross-sales').value = extractedData.distributor_summary?.gross_sales || '';
+            document.getElementById('val-abs-od').value = extractedData.distributor_summary?.total_absorptions_odf || '';
+            document.getElementById('val-abs-dist').value = extractedData.distributor_summary?.total_absorptions_dist || '';
+            document.getElementById('val-gst').value = extractedData.distributor_summary?.gst_hst_charged || '';
+            document.getElementById('val-credit-od').value = extractedData.distributor_summary?.total_old_dutch_credits || '';
+
+            // Populate Payment Fields
+            document.getElementById('val-pay-date').value = extractedData.payments_received?.date || '';
+            document.getElementById('val-cash').value = extractedData.payments_received?.total_cash || '';
+            document.getElementById('val-check').value = extractedData.payments_received?.total_check || '';
+
+            // Populate Gross Profit Fields
+            document.getElementById('val-gp-date').value = extractedData.gross_profit?.date || '';
+            document.getElementById('val-gp').value = extractedData.gross_profit?.distributor_gross_profit || '';
+            
             resultSection.hidden = false;
             
             if (extractedData.metadata?.dates_consistent === false) {
@@ -190,7 +205,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ========================================================================
     exportBtn.addEventListener('click', async () => {
         try {
-            const dataToExport = JSON.parse(jsonOutput.value);
+            // Reconstruct the JSON payload from the HTML inputs
+            const dataToExport = {
+                distributor_summary: {
+                    date: document.getElementById('val-sum-date').value,
+                    gross_sales: Number.parseFloat(document.getElementById('val-gross-sales').value) || 0,
+                    total_absorptions_odf: Number.parseFloat(document.getElementById('val-abs-od').value) || 0,
+                    total_absorptions_dist: Number.parseFloat(document.getElementById('val-abs-dist').value) || 0,
+                    gst_hst_charged: Number.parseFloat(document.getElementById('val-gst').value) || 0,
+                    total_old_dutch_credits: Number.parseFloat(document.getElementById('val-credit-od').value) || 0
+                },
+                payments_received: {
+                    date: document.getElementById('val-pay-date').value,
+                    total_cash: Number.parseFloat(document.getElementById('val-cash').value) || 0,
+                    total_check: Number.parseFloat(document.getElementById('val-check').value) || 0
+                },
+                gross_profit: {
+                    date: document.getElementById('val-gp-date').value,
+                    distributor_gross_profit: Number.parseFloat(document.getElementById('val-gp').value) || 0
+                }
+            };
             const selectedSheetId = workbookSelect.value;
 
             if (!selectedSheetId) {
