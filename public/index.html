@@ -47,7 +47,33 @@
 
     <div id="result-section" hidden>
         <p class="helper-text"><strong>Step 3:</strong> Review and edit the extracted data.</p>
-        <textarea id="json-output"></textarea>
+        
+        <div class="form-grid" style="display: grid; gap: 15px; margin-bottom: 20px; text-align: left;">
+            
+            <fieldset style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+                <legend style="font-weight: bold;">Distributor's Summary</legend>
+                <label>Date: <input type="text" id="val-sum-date" style="width: 100%; margin-bottom: 10px;"></label>
+                <label>Gross Sales: <input type="number" step="0.01" id="val-gross-sales" style="width: 100%; margin-bottom: 10px;"></label>
+                <label>Total Absorptions (OD): <input type="number" step="0.01" id="val-abs-od" style="width: 100%; margin-bottom: 10px;"></label>
+                <label>Total Absorptions (Dist): <input type="number" step="0.01" id="val-abs-dist" style="width: 100%; margin-bottom: 10px;"></label>
+                <label>GST/HST Collected: <input type="number" step="0.01" id="val-gst" style="width: 100%; margin-bottom: 10px;"></label>
+                <label>Credit From OD: <input type="number" step="0.01" id="val-credit-od" style="width: 100%; margin-bottom: 5px;"></label>
+            </fieldset>
+
+            <fieldset style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+                <legend style="font-weight: bold;">Payments Received</legend>
+                <label>Date: <input type="text" id="val-pay-date" style="width: 100%; margin-bottom: 10px;"></label>
+                <label>Cash Collected: <input type="number" step="0.01" id="val-cash" style="width: 100%; margin-bottom: 10px;"></label>
+                <label>Checks Collected: <input type="number" step="0.01" id="val-check" style="width: 100%; margin-bottom: 5px;"></label>
+            </fieldset>
+
+            <fieldset style="padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+                <legend style="font-weight: bold;">Gross Profit</legend>
+                <label>Date: <input type="text" id="val-gp-date" style="width: 100%; margin-bottom: 10px;"></label>
+                <label>Gross Profit: <input type="number" step="0.01" id="val-gp" style="width: 100%; margin-bottom: 5px;"></label>
+            </fieldset>
+            
+        </div>
         
         <button id="export-btn">Confirm & Send to Sheets</button>
     </div>
